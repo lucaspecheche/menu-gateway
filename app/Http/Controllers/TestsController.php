@@ -20,8 +20,11 @@ class TestsController
 
     public function categories(): JsonResponse
     {
-        if ($categories = Cache::get('CATEGORIES')) {
-            return response()->json($categories);
+       $categories = Cache::get('CATEGORIES');
+
+        if (empty($categories) === false) {
+            $categoriesSanitized = $this->sanitize($categories);
+            return response()->json($categoriesSanitized);
         }
 
         $response = $this->http->get('V1/categories')->json();
@@ -29,6 +32,26 @@ class TestsController
 
         return response()->json($response);
     }
+
+    public function sanitize(array $categories): array
+    {
+        if (array_key_exists('level', $categories)) {
+            unset($categories['level']);
+        }
+
+        if (array_key_exists('is_active', $categories)) {
+            unset($categories['is_active']);
+        }
+
+        if (count($categories['children_data']) > 0) {
+            foreach ($categories['children_data'] as $category) {
+                $this->sanitize($category);
+            }
+        }
+
+        return $categories;
+    }
+
 
     public function products(Request $request): JsonResponse
     {
